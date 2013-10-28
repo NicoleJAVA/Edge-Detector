@@ -1,5 +1,4 @@
 
-
 #include "stdio.h"
 #include "iostream.h"
 #include "stdlib.h"
@@ -7,6 +6,8 @@
 
 #define PI 3.14159265
 #define Size 512
+#define ThreshUp 33
+#define ThreshLow 15
 using namespace std;
 
 int main( int argc, char *argv[])
@@ -112,10 +113,13 @@ int main( int argc, char *argv[])
 						/********************************************/
 								
 	/*****************************************************   M A G I C   ****/	
+	
+	
 	static float Gr[Size][Size];	// row gradient
 	static float Gc[Size][Size];	// column gradient
-	static float gradient[Size][Size];
-	static float gradTheta[Size][Size];
+		//"static" avoids arr-too-big bug
+	static float gradient[Size][Size]; // "static" avoids arr-too-big bug
+	static float gradTheta[Size][Size]; // "static" avoids arr-too-big bug
 	float tempGr;	
 	float tempGc;
 	float actualTheta;
@@ -229,14 +233,69 @@ int main( int argc, char *argv[])
 						/******                                ******/
 						/********************************************/		
 		
-	static int edgeMap[Size][Size];		
+	static unsigned char afterThresh[Size][Size];
+		//"static" avoids arr-too-big bug
 		
 	for( i = 2; i < Size - 2; i++ ){
 		for( j = 2; j < Size - 2; j ++ ){
 			
+			if( MaxOrNonMax[i][j] >= ThreshUp ){
+				afterThresh[i][j] = 255;	
+			}	
+			else if( MaxOrNonMax[i][j]>=ThreshLow && MaxOrNonMax[i][j]<ThreshUp ){
+				afterThresh[i][j] = 127;
+			}
+			else if( MaxOrNonMax[i][j] < ThreshLow ){
+				afterThresh[i][j] = 0;
+			}
+			
 		}	//	End for
 	}	//		End-1-for	
+
+
+						/********************************************/
+						/******                                ******/
+						/******    Connected  Component        ******/
+						/******    Labeling   Method 				******/
+						/******                                ******/
+						/********************************************/	
+
+	static unsigned char edgeMap[Size][Size];//"static" avoids arr-too-big bug
 	
+	int connCounter;  // records how many neighbors are the exact-edge-points
+	
+	for( i = 2; i < Size - 2; i++ ){
+		for( j = 2; j < Size - 2; j++ ){
+			
+			
+			//			      	< Must reset connCounter to zero  >
+			connCounter = 0;
+			
+			if( afterThresh[i][j] != 255 ){
+				continue;
+			}
+			else{
+				if( afterThresh[i-1][j-1] == 255 ) { connCounter++; }
+				if( afterThresh[i-1][j] == 255 ) { connCounter++; }
+				if( afterThresh[i-1][j+1] == 255 ) { connCounter++; }
+				if( afterThresh[i][j-1] == 255 ) { connCounter++; }
+				if( afterThresh[i][j] == 255 ) { connCounter++; }
+				if( afterThresh[i][j+1] == 255 ) { connCounter++; }
+				if( afterThresh[i+1][j-1] == 255 ) { connCounter++; }
+				if( afterThresh[i+1][j] == 255 ) { connCounter++; }
+				if( afterThresh[i+1][j+1] == 255 ) { connCounter++; }
+				
+				if( connCounter >= 2 ){
+					edgeMap[i][j] = 255;	
+				}
+				else{
+					edgeMap[i][j] = 0;	
+				}
+			}	//		End
+			
+			
+		}	//		End-2-for
+	}	//		End-1-for
 		
 
 						/********************************************/
@@ -246,7 +305,7 @@ int main( int argc, char *argv[])
 						/********************************************/		
 	
 
-	if (  !(file=fopen("output.raw","wb"))  )
+	if (  !(file=fopen("afterGauss.raw","wb"))  )
 	{
 		cout<<"Cannot open file!"<<endl;
 		exit(1);
@@ -259,7 +318,7 @@ int main( int argc, char *argv[])
 	
 						/********************************************/
 						/******                                ******/
-						/******    write image to "gradNonMax.raw"  ******/
+						/*****write image to "gradNonMax.raw"  ******/
 						/******                                ******/
 						/********************************************/		
 	
@@ -274,6 +333,46 @@ int main( int argc, char *argv[])
 		fwrite(gradNonMaxImg, sizeof(unsigned char), Size*Size, file);
 		fclose(file);
 	}
+
+
+						/********************************************/
+						/******                                ******/
+						/****write image to "afterThresh.raw"  ******/
+						/******                                ******/
+						/********************************************/		
+	
+
+	if (  !(file=fopen("afterThresh.raw","wb"))  )
+	{
+		cout<<"Cannot open file!"<<endl;
+		exit(1);
+	}
+	else 
+	{
+		fwrite(afterThresh, sizeof(unsigned char), Size*Size, file);
+		fclose(file);
+	}
+
+						/********************************************/
+						/******                                ******/
+						/****write image to "edgeMap.raw"  ******/
+						/******                                ******/
+						/********************************************/		
+	
+
+	if (  !(file=fopen("edgeMap.raw","wb"))  )
+	{
+		cout<<"Cannot open file!"<<endl;
+		exit(1);
+	}
+	else 
+	{
+		fwrite(edgeMap, sizeof(unsigned char), Size*Size, file);
+		fclose(file);
+	}
+
+
+
 
 	system("PAUSE");
 	exit(0);
