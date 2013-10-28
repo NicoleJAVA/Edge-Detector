@@ -168,46 +168,77 @@ int main( int argc, char *argv[])
 						/******    Non-Maximal Suppression     ******/
 						/******                                ******/
 						/********************************************/
-	static float gradNonMax[Size][Size];
+						
+	static float MaxOrNonMax[Size][Size];
+	
 	for( i = 2; i < Size -2; i++ ){
 		for( j = 2; j < Size -2; j++ ){
 			
 			if( gradTheta[i][j] == 0 ){	//	Compare with [left] and with [right]
 				if( (gradient[i][j] > gradient[i][j-1]) && (gradient[i][j] > gradient[i][j+1]) ){
-					gradNonMax[i][j] = gradient[i][j];
+					MaxOrNonMax[i][j] = gradient[i][j];
 				}
 				else{
-					gradNonMax[i][j] = 0;
+					MaxOrNonMax[i][j] = 0;
 				}
 			}	//		End-3-if
-			else if( gradTheta[i][j] == 45 ){	//	 	[up-right]. [low-left].
+			else if( gradTheta[i][j] == 45 ){	//	 	[up-right].   [low-left].
 				if( (gradient[i][j] > gradient[i-1][j+1]) && (gradient[i][j] > gradient[i+1][j-1]) ){
-					gradNonMax[i][j] = gradient[i][j];
+					MaxOrNonMax[i][j] = gradient[i][j];
 				}
 				else{
-					gradNonMax[i][j] = 0;
+					MaxOrNonMax[i][j] = 0;
 				}
 			}	//		End-3-else-if			
-			else if( gradTheta[i][j] == 90 ){  // Compare With [up] and with [low]
+			else if( gradTheta[i][j] == 90 ){  //     [upper].   [lower].
 				if( (gradient[i][j] > gradient[i-1][j]) && (gradient[i][j] > gradient[i+1][j]) ){
-					gradNonMax[i][j] = gradient[i][j];
+					MaxOrNonMax[i][j] = gradient[i][j];
 				}
 				else{
-					gradNonMax[i][j] = 0;
+					MaxOrNonMax[i][j] = 0;
 				}
 			}	//		End-3-else-if			
-			else if( gradTheta[i][j] == 135 ){ 	 //  	[up-left].  [low-right].
+			else if( gradTheta[i][j] == 135 ){ 	 //  	[up-left].   [low-right].
 				if( (gradient[i][j] > gradient[i-1][j-1]) && (gradient[i][j] > gradient[i+1][j+1]) ){
-					gradNonMax[i][j] = gradient[i][j];
+					MaxOrNonMax[i][j] = gradient[i][j];
 				}
 				else{
-					gradNonMax[i][j] = 0;
+					MaxOrNonMax[i][j] = 0;
 				}
 			}	//		End-3-else-if	
 			
 		}
 	}
 	
+	/***************************************************   M A G I C ***/
+	unsigned char gradNonMaxImg[Size][Size];
+	for( i = 0; i < Size; i ++ ){
+		for( j = 0; j < Size; j ++ ){
+		
+			gradNonMaxImg[i][j] = static_cast<unsigned char>(MaxOrNonMax[i][j]);
+		
+		}	
+	} 
+	/***************************************************  END   M A G I C ***/
+	
+	
+	
+						/********************************************/
+						/******                                ******/
+						/******    Hysteretic Thresholding     ******/
+						/******                                ******/
+						/********************************************/		
+		
+	static int edgeMap[Size][Size];		
+		
+	for( i = 2; i < Size - 2; i++ ){
+		for( j = 2; j < Size - 2; j ++ ){
+			
+		}	//	End for
+	}	//		End-1-for	
+	
+		
+
 						/********************************************/
 						/******                                ******/
 						/******    write image to "ouput.raw"  ******/
@@ -223,6 +254,24 @@ int main( int argc, char *argv[])
 	else 
 	{
 		fwrite(afterGauss, sizeof(unsigned char), Size*Size, file);
+		fclose(file);
+	}
+	
+						/********************************************/
+						/******                                ******/
+						/******    write image to "gradNonMax.raw"  ******/
+						/******                                ******/
+						/********************************************/		
+	
+
+	if (  !(file=fopen("MaxOrNonMax.raw","wb"))  )
+	{
+		cout<<"Cannot open file!"<<endl;
+		exit(1);
+	}
+	else 
+	{
+		fwrite(gradNonMaxImg, sizeof(unsigned char), Size*Size, file);
 		fclose(file);
 	}
 
