@@ -3,9 +3,9 @@
 #include "stdio.h"
 #include "iostream.h"
 #include "stdlib.h"
+#include "math.h"
 
-// define image size 512*512
-// you can change it to other size
+#define PI 3.14159265
 #define Size 512
 using namespace std;
 
@@ -18,10 +18,17 @@ int main( int argc, char *argv[])
 	
 
 	
+						/************************************************/
+						/******                                	 ******/
+						/****** Read "input.raw" into Imagedata[][]******/
+						/******                                	 ******/
+						/************************************************/	
+						
+	
 	
 	
 
-	// read image "lena.raw" into image data matrix
+
 	
 	/******************************************************* M A G I C *****/
 	if (!(file=fopen("sample1.raw","rb")))
@@ -61,9 +68,6 @@ int main( int argc, char *argv[])
 						/******     Blur with Gaussian Filter  ******/
 						/******                                ******/
 						/********************************************/	
-						
-	
-	
 	
 	//								   < Construct Gaussian mask >
 	
@@ -101,7 +105,108 @@ int main( int argc, char *argv[])
 	
 	
 	
+						/********************************************/
+						/******                                ******/
+						/******    Compute Gradient            ******/
+						/******                                ******/
+						/********************************************/
+								
+	/*****************************************************   M A G I C   ****/	
+	static float Gr[Size][Size];	// row gradient
+	static float Gc[Size][Size];	// column gradient
+	static float gradient[Size][Size];
+	static float gradTheta[Size][Size];
+	float tempGr;	
+	float tempGc;
+	float actualTheta;
 	
+	/*************************************************************************/
+
+/*************************************************************************/
+	for( i = 1; i < Size - 1; i++ ){
+		for( j = 1; j < Size - 1 ; j++){
+			tempGr = (float) ( (Imagedata[i-1][j+1]+2*Imagedata[i][j+1]+Imagedata[i+1][j+1]) - (Imagedata[i-1][j-1]+2*Imagedata[i][j-1]+Imagedata[i+1][j-1]) ) / 4.0;
+			tempGc = (float) ( (Imagedata[i-1][j-1]+2*Imagedata[i-1][j]+Imagedata[i-1][j+1]) - (Imagedata[i+1][j-1]+2*Imagedata[i+1][j]+Imagedata[i+1][j+1]) ) / 4.0;
+			Gr[i][j] = tempGr;
+			Gc[i][j] = tempGc;
+			gradient[i][j] = sqrt( (Gr[i][j] * Gr[i][j]) + (Gc[i][j] * Gc[i][j]) );
+			actualTheta = atan(Gr[i][j]/Gc[i][j]) * 180 / PI;
+			
+			//								  < map 360-system-angle sto 180-system-angle >		
+			
+			// if actulThtheta is either near east or near west,
+			// then set gradTheta as either exact east or exact west.
+			// 正東或者是正西 
+			if( (actualTheta<22.5 && actualTheta>-22.5) || actualTheta>157.5 || actualTheta>-157.5 ){
+				gradTheta[i][j] = 0;
+			}	
+			// if actulThtheta is either near north-east or near south-west,
+			// then set gradTheta as either exact north-east or exact south-west.
+			// 東北或者是西南 
+			if( (actualTheta>22.5 && actualTheta<67.5) || (actualTheta<-112.5&&actualTheta>-157.5) ){
+				gradTheta[i][j] = 45;
+			}	
+			// Nearby : Either north or south.
+			// 正北或者是正南 
+			if( (actualTheta>67.5&& actualTheta<112.5) || (actualTheta<-67.5&&actualTheta>-112.5) ){
+				gradTheta[i][j] = 90;
+			}	
+			// Nearby : Either north-west or south-east
+			// 西北或者是東南 
+			if( (actualTheta>112.5 && actualTheta<157.5)|| (actualTheta<-22.5&&actualTheta>-67.5) ){
+				gradTheta[i][j] = 135;
+			}	//		End-3-if 
+		}	//		End-2-for 
+	}	//		End-1-for
+/*************************************************************************/
+	
+	
+	
+	
+						/********************************************/
+						/******                                ******/
+						/******    Non-Maximal Suppression     ******/
+						/******                                ******/
+						/********************************************/
+	static float gradNonMax[Size][Size];
+	for( i = 2; i < Size -2; i++ ){
+		for( j = 2; j < Size -2; j++ ){
+			
+			if( gradTheta[i][j] == 0 ){	//	Compare with [left] and with [right]
+				if( (gradient[i][j] > gradient[i][j-1]) && (gradient[i][j] > gradient[i][j+1]) ){
+					gradNonMax[i][j] = gradient[i][j];
+				}
+				else{
+					gradNonMax[i][j] = 0;
+				}
+			}	//		End-3-if
+			else if( gradTheta[i][j] == 45 ){	//	 	[up-right]. [low-left].
+				if( (gradient[i][j] > gradient[i-1][j+1]) && (gradient[i][j] > gradient[i+1][j-1]) ){
+					gradNonMax[i][j] = gradient[i][j];
+				}
+				else{
+					gradNonMax[i][j] = 0;
+				}
+			}	//		End-3-else-if			
+			else if( gradTheta[i][j] == 90 ){  // Compare With [up] and with [low]
+				if( (gradient[i][j] > gradient[i-1][j]) && (gradient[i][j] > gradient[i+1][j]) ){
+					gradNonMax[i][j] = gradient[i][j];
+				}
+				else{
+					gradNonMax[i][j] = 0;
+				}
+			}	//		End-3-else-if			
+			else if( gradTheta[i][j] == 135 ){ 	 //  	[up-left].  [low-right].
+				if( (gradient[i][j] > gradient[i-1][j-1]) && (gradient[i][j] > gradient[i+1][j+1]) ){
+					gradNonMax[i][j] = gradient[i][j];
+				}
+				else{
+					gradNonMax[i][j] = 0;
+				}
+			}	//		End-3-else-if	
+			
+		}
+	}
 	
 						/********************************************/
 						/******                                ******/
@@ -110,13 +215,16 @@ int main( int argc, char *argv[])
 						/********************************************/		
 	
 
-	if (!(file=fopen("output.raw","wb")))
+	if (  !(file=fopen("output.raw","wb"))  )
 	{
 		cout<<"Cannot open file!"<<endl;
 		exit(1);
 	}
-	fwrite(afterGauss, sizeof(unsigned char), Size*Size, file);
-	fclose(file);
+	else 
+	{
+		fwrite(afterGauss, sizeof(unsigned char), Size*Size, file);
+		fclose(file);
+	}
 
 	system("PAUSE");
 	exit(0);
