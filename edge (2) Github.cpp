@@ -6,8 +6,8 @@
 
 #define PI 3.14159265
 #define Size 512
-#define ThreshUp 30
-#define ThreshLow 20
+#define ThreshUp 33
+#define ThreshLow 15
 using namespace std;
 
 int main( int argc, char *argv[])
@@ -34,7 +34,9 @@ int main( int argc, char *argv[])
 	int iOffset = 0, jOffset = 0; 	//	 the offset within the moving-window
 	unsigned char afterGauss[Size][Size];
 	float  neighborSum = 0;
-		
+	
+	float test = 0;
+	
 	
 						/********************************************/
 						/******                                ******/
@@ -50,26 +52,30 @@ int main( int argc, char *argv[])
 		}
 	}
 	
+	
 	//								   < Move the Gaussian window >		
 	
 	for( i = 2; i < Size-2; i++ ){
 		for( j = 2; j < Size-2; j++){
 		
+			//printf("\n\n¶i¤J²Ä %d, %d °j°é.", i, j ); 
 			neighborSum = 0;
-
+			test = 0;
 			for( iOffset = -2; iOffset <= 2; iOffset++ ){
 				for( jOffset = -2; jOffset <= 2; jOffset++ ){
 					
 					neighborSum +=  Imagedata[i+iOffset][j+jOffset] * gauss[2+iOffset][2+jOffset];
+					test += gauss[2+iOffset][2+jOffset];
 
-
-				}	//	End-4-for
-			}	//	End-3-for					
-
+				}	//		End-4-for
+			}	//		End-3-for					
+			//Imagedata[i][j] = neighborSum;
+			//if( i == 50 && j == 50 ){printf("\nneighborSum : %f. test: %f.\n", neighborSum, test );}
 			afterGauss[i][j] = static_cast<unsigned char>(neighborSum);
+		 	//printf("  %f", afterGauss[i][j] );
 					
-		}	//	End-2-for
-	}	//	End-1-for
+		}	//		End-2-for
+	}	//		End-1-for
 
 	
 
